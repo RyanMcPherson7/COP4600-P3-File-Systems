@@ -25,7 +25,6 @@ class Wad {
     private:
         string magic;
         FileSystemObj* root;
-        vector<string> parsePath(const string& path);
         FileSystemObj* getDestinationEntity(const string& path);
     public:
         Wad();

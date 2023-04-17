@@ -213,18 +213,6 @@ int Wad::getDirectory(const string &path, vector<string> *directory) {
 }
 
 
-vector<string> Wad::parsePath(const string& path) {
-    vector<string> tokens;
-    stringstream stream(path);
-    string token;
-
-    while (getline(stream, token, '/')) {
-        tokens.push_back(token);
-    }
-
-    return tokens;
-}
-
 FileSystemObj* Wad::getDestinationEntity(const string& path) {
     vector<string> entityNames;
     stringstream stream(path);
@@ -242,12 +230,12 @@ FileSystemObj* Wad::getDestinationEntity(const string& path) {
 
     // change directories into destination
     FileSystemObj* destination = this->root;
-    for (string entityName : entityNames) {
+    for (int i = 1; i < entityNames.size(); i++) {
         vector<FileSystemObj*> children = destination->getChildren();
         bool destinationChange = false;
 
         for (FileSystemObj* child : children) {
-            if (child->getName().compare(entityName) == 0) {
+            if (child->getName().compare(entityNames.at(i)) == 0) {
                 destination = child;
                 destinationChange = true;
                 break;
