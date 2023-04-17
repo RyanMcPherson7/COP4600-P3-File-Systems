@@ -1,4 +1,6 @@
 #include "Wad.h"
+#include <stack>
+#include <cctype>
 
 // ===============================================
 // FileSystemObj Class Function Definitions
@@ -6,14 +8,27 @@
 FileSystemObj::FileSystemObj() {}
 
 
-FileSystemObj::FileSystemObj(char* name, bool isDirectory, char* content) {
+FileSystemObj::FileSystemObj(string name, string content) {
     this->name = name;
-    this->isDirectory = isDirectory;
     this->content = content;
 }
 
 
-void FileSystemObj::appendChild(FileSystemObj* child) {}
+void FileSystemObj::appendChild(FileSystemObj* child) {
+    this->children.push_back(child);
+}
+
+
+bool FileSystemObj::isMap() {
+    return name.length() == 4 && name.at(0) == 'E' && 
+        isdigit(name.at(1)) && name.at(2) == 'M' && isdigit(name.at(3));
+}
+
+
+int FileSystemObj::getNumChildren() {
+    return this->children.size();
+}
+
 
 // ===============================================
 // Wad Function Class Definitions
@@ -37,48 +52,79 @@ Wad* Wad::loadWad(const string& path) {
     if (!inputFile.is_open()) throw runtime_error("Cannot open file");
 
     // read magic
-    inputFile.read(wad->magic, 4);
+    char* charMagic = new char[4];
+    inputFile.read(charMagic, 4);
+    wad->magic = (string(charMagic)).substr(0, 4);
 
     // read descriptor metadata
     unsigned int numDescriptors, descriptorOffset;
     inputFile.read((char*)&numDescriptors, 4);
     inputFile.read((char*)&descriptorOffset, 4);
 
+    // use stack to track directory nesting
+    stack<FileSystemObj*> hierarchy;
+    FileSystemObj* root = new FileSystemObj("root", "");
+    hierarchy.push(root);
+
     // read and parse elements
     for (int i = 0; i < numDescriptors; i++) {
         inputFile.seekg(descriptorOffset + i * 16, ios_base::beg);
         unsigned int elemOffset = 0, elemLen = 0;
-        char* elemName = new char[8];
+        char* charElemName = new char[8];
 
         // read metadata
         inputFile.read((char*)&elemOffset, 4);
         inputFile.read((char*)&elemLen, 4);
-        inputFile.read(elemName, 8);
+        inputFile.read(charElemName, 8);
+        string elemName(charElemName);
+        elemName = elemName.substr(0, 8);
+        delete[] charElemName;
 
-        // read file content
-        inputFile.seekg(elemOffset, ios_base::beg);
-        char* content = new char[elemLen];
-        inputFile.read(content, elemLen);
-
-        for (int j = 0; j < 8; j++) {
-            cout << elemName[j];
+        // check if map and 10 element limit reached
+        if (hierarchy.top()->isMap() && hierarchy.top()->getNumChildren() == 10) {
+            hierarchy.pop();
         }
-        cout << " : ";
-        for (int j = 0; j < elemLen; j++) {
-            cout << content[j];
-        }
-        cout << endl;
 
-        delete[] elemName;
-        delete[] content;
+        // determine if file, namespace, or map
+        if (elemLen != 0) { 
+            // read file content
+            inputFile.seekg(elemOffset, ios_base::beg);
+            char* charFileContent = new char[elemLen];
+            inputFile.read(charFileContent, elemLen);
+            string fileContent(charFileContent);
+            fileContent = fileContent.substr(0, elemLen);
+            delete[] charFileContent;
+
+            FileSystemObj* newFile = new FileSystemObj(elemName, fileContent);
+            hierarchy.top()->appendChild(newFile);
+
+        } 
+        else if (elemName.find("_START") != string::npos) { // opening namespace
+            elemName = elemName.substr(elemName.find("_START"));
+            FileSystemObj* newNamespace = new FileSystemObj(elemName, "");
+            hierarchy.top()->appendChild(newNamespace);
+            hierarchy.push(newNamespace);
+
+        } else if (elemName.find("_END") != string::npos) { // closing namespace
+            hierarchy.pop();
+
+        } else { // map
+            FileSystemObj* newMap = new FileSystemObj(elemName, "");
+            hierarchy.top()->appendChild(newMap);
+            hierarchy.push(newMap);
+        }
     }
+
+    wad->root = root;
 
     inputFile.close();
     return wad;
 }
 
 
-string Wad::getMagic() {}
+string Wad::getMagic() {
+    return this->magic;
+}
 
 
 bool Wad::isContent(const string &path) {}

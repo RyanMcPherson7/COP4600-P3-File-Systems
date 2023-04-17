@@ -6,20 +6,20 @@ using namespace std;
 
 class FileSystemObj {
     private:
-        char* name;
+        string name;
         vector<FileSystemObj*> children;
-        bool isDirectory;
-        char* content;
-        unsigned int contentSizeInBytes;
+        string content;
     public:
         FileSystemObj();
-        FileSystemObj(char* name, bool isDirectory, char* content);
+        FileSystemObj(string name, string content);
         void appendChild(FileSystemObj* child);
+        bool isMap();
+        int getNumChildren();
 };
 
 class Wad {
     private:
-        char* magic;
+        string magic;
         FileSystemObj* root;
         FileSystemObj* parseFile(ifstream &file);
         FileSystemObj* parseMap(ifstream &file);
