@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "iosfwd": "cpp",
+    "*.tcc": "cpp",
+    "memory_resource": "cpp",
+    "limits": "cpp",
+    "type_traits": "cpp",
+    "fstream": "cpp"
+  }
+}
