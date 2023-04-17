@@ -109,8 +109,11 @@ Wad* Wad::loadWad(const string& path) {
             inputFile.seekg(elemOffset, ios_base::beg);
             char* charFileContent = new char[elemLen];
             inputFile.read(charFileContent, elemLen);
-            string fileContent(charFileContent);
-            fileContent = fileContent.substr(0, elemLen);
+            string fileContent = "";
+            for (int i = 0; i < elemLen; i++) {
+                fileContent += charFileContent[i];
+            }
+
             delete[] charFileContent;
 
             FileSystemObj* newFile = new FileSystemObj(elemName, fileContent);
