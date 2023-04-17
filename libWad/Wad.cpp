@@ -1,6 +1,7 @@
 #include "Wad.h"
 #include <stack>
 #include <cctype>
+#include <sstream>
 
 // ===============================================
 // FileSystemObj Class Function Definitions
@@ -30,18 +31,35 @@ int FileSystemObj::getNumChildren() {
 }
 
 
+string FileSystemObj::getName() {
+    return this->name;
+}
+
+
+string FileSystemObj::getContent() {
+    return this->content;
+}
+
+
+vector<string> FileSystemObj::getChildrenNames() {
+    vector<string> childrenNames;
+
+    for (FileSystemObj* child : this->children) {
+        childrenNames.push_back(child->getName());
+    }
+
+    return childrenNames;
+}
+
+
+vector<FileSystemObj*> FileSystemObj::getChildren() {
+    return this->children;
+}
+
+
 // ===============================================
 // Wad Function Class Definitions
 // ===============================================
-FileSystemObj* Wad::parseFile(ifstream &file) {}
-
-
-FileSystemObj* Wad::parseMap(ifstream &file) {}
-
-
-FileSystemObj* Wad::parseNamespace(ifstream &file) {}
-
-
 Wad::Wad() {}
 
 
@@ -63,7 +81,7 @@ Wad* Wad::loadWad(const string& path) {
 
     // use stack to track directory nesting
     stack<FileSystemObj*> hierarchy;
-    FileSystemObj* root = new FileSystemObj("root", "");
+    FileSystemObj* root = new FileSystemObj("", "");
     hierarchy.push(root);
 
     // read and parse elements
@@ -100,7 +118,7 @@ Wad* Wad::loadWad(const string& path) {
 
         } 
         else if (elemName.find("_START") != string::npos) { // opening namespace
-            elemName = elemName.substr(elemName.find("_START"));
+            elemName = elemName.substr(0, elemName.find("_START"));
             FileSystemObj* newNamespace = new FileSystemObj(elemName, "");
             hierarchy.top()->appendChild(newNamespace);
             hierarchy.push(newNamespace);
@@ -127,16 +145,120 @@ string Wad::getMagic() {
 }
 
 
-bool Wad::isContent(const string &path) {}
+bool Wad::isContent(const string &path) {
+    FileSystemObj* destinationEntity = getDestinationEntity(path);
+
+    if (destinationEntity == nullptr) return false;
+
+    return destinationEntity->getContent().length() > 0;
+}
 
 
-bool Wad::isDirectory(const string &path) {}
+bool Wad::isDirectory(const string &path) {
+    return !isContent(path);
+}
 
 
-int Wad::getSize(const string &path) {}
+int Wad::getSize(const string &path) {
+    FileSystemObj* destinationEntity = getDestinationEntity(path);
+
+    if (destinationEntity == nullptr) return -1;
+
+    int contentSize = destinationEntity->getContent().length();
+
+    return contentSize > 0 ? contentSize : -1; 
+}
 
 
-int Wad::getContents(const string &path, char *buffer, int length, int offset = 0) {}
+int Wad::getContents(const string &path, char *buffer, int length, int offset = 0) {
+    FileSystemObj* destinationEntity = getDestinationEntity(path);
+
+    if (destinationEntity == nullptr) return -1;
+
+    string content = destinationEntity->getContent();
+
+    if (content.length() == 0) {
+        return -1;
+    }
+
+    content = content.substr(offset, length);
+
+    for (int i = 0; i < length; i++) {
+        buffer[i] = content.at(i);
+    }
+
+    return length;
+}
 
 
-int Wad::getDirectory(const string &path, vector<string> *directory) {}
+int Wad::getDirectory(const string &path, vector<string> *directory) {
+    FileSystemObj* destinationEntity = getDestinationEntity(path);
+
+    if (destinationEntity == nullptr) return -1;
+
+    string content = destinationEntity->getContent();
+
+
+    if (content.length() > 0) {
+        return -1;
+    }
+
+    // copy over children
+    vector<string> childrenNames = destinationEntity->getChildrenNames();
+    for (string childName : childrenNames) {
+        directory->push_back(childName);
+    }
+    
+    return destinationEntity->getNumChildren();
+}
+
+
+vector<string> Wad::parsePath(const string& path) {
+    vector<string> tokens;
+    stringstream stream(path);
+    string token;
+
+    while (getline(stream, token, '/')) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
+FileSystemObj* Wad::getDestinationEntity(const string& path) {
+    vector<string> entityNames;
+    stringstream stream(path);
+    string name;
+
+    // parse path
+    while (getline(stream, name, '/')) {
+        entityNames.push_back(name);
+    }
+
+    // root path requested
+    if (path.length() == 1) {
+        return this->root;
+    }
+
+    // change directories into destination
+    FileSystemObj* destination = this->root;
+    for (string entityName : entityNames) {
+        vector<FileSystemObj*> children = destination->getChildren();
+        bool destinationChange = false;
+
+        for (FileSystemObj* child : children) {
+            if (child->getName().compare(entityName) == 0) {
+                destination = child;
+                destinationChange = true;
+                break;
+            }
+        }
+
+        // invalid file path
+        if (!destinationChange) {
+            return nullptr;
+        }
+    }
+
+    return destination;
+}

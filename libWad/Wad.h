@@ -15,15 +15,18 @@ class FileSystemObj {
         void appendChild(FileSystemObj* child);
         bool isMap();
         int getNumChildren();
+        string getName();
+        string getContent();
+        vector<string> getChildrenNames();
+        vector<FileSystemObj*> getChildren();
 };
 
 class Wad {
     private:
         string magic;
         FileSystemObj* root;
-        FileSystemObj* parseFile(ifstream &file);
-        FileSystemObj* parseMap(ifstream &file);
-        FileSystemObj* parseNamespace(ifstream &file);
+        vector<string> parsePath(const string& path);
+        FileSystemObj* getDestinationEntity(const string& path);
     public:
         Wad();
         static Wad* loadWad(const string& path);
