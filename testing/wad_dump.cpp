@@ -23,8 +23,9 @@ void exploreDirectory(Wad *data, const string path, int level)
             cout << level << ". DIR: " << entry << endl;
             exploreDirectory(data, entryPath + "/", level + 1);
         }
-        else if (data->isContent(entryPath))
+        else if (data->isContent(entryPath)) {
             cout << level << ". CONTENT: " << entry << "; Size: " << data->getSize(entryPath) << endl;
+        }
         else
             cout << "***WARNING: entry " << entry << " has invalid type!***" << endl;
     }

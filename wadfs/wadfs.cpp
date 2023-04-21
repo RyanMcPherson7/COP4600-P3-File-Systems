@@ -11,17 +11,17 @@ static int getattr_callback(const char *path, struct stat *stbuf) {
 
     // directory
     if (wad->isDirectory(path)) {
-	stbuf->st_mode = S_IFDIR | 0555;
-	stbuf->st_nlink = 2;
-	return 0;
+        stbuf->st_mode = S_IFDIR | 0555;
+        stbuf->st_nlink = 2;
+        return 0;
     }
 
     // file
     if (wad->isContent(path)) {
-	stbuf->st_mode = S_IFREG | 0444;
-	stbuf->st_nlink = 1;
-	stbuf->st_size = wad->getSize(path);
-	return 0;
+        stbuf->st_mode = S_IFREG | 0444;
+        stbuf->st_nlink = 1;
+        stbuf->st_size = wad->getSize(path);
+        return 0;
     }
 
     return -ENOENT;
@@ -47,7 +47,7 @@ static int readdir_callback(const char *path, void *buf, fuse_fill_dir_t filler,
     wad->getDirectory(path, &childrenNames);
 
     for (string name : childrenNames) {
-	filler(buf, name.c_str(), NULL, 0);
+	    filler(buf, name.c_str(), NULL, 0);
     }
 
     return 0;

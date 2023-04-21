@@ -184,6 +184,9 @@ int Wad::getContents(const string &path, char *buffer, int length, int offset = 
         return -1;
     }
 
+    if (length > content.length()) {
+        length = content.length();
+    }
     content = content.substr(offset, length);
 
     for (int i = 0; i < length; i++) {
